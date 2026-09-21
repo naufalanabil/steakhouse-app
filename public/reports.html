@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan & Riwayat Pesanan - Prime Steakhouse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans antialiased">
+
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-chart-line text-amber-500 text-3xl"></i>
+                <h1 class="text-2xl font-bold tracking-wide">LAPORAN & RIWAYAT TRANSAKSI</h1>
+            </div>
+            <div class="space-x-2">
+                <a href="/admin.html" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-semibold transition">
+                    <i class="fa-solid fa-gauge mr-2"></i>Dashboard Admin
+                </a>
+                <button onclick="handleLogout()" class="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-semibold transition">
+                    <i class="fa-solid fa-right-from-bracket mr-1"></i>Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-8">
+
+        <!-- 1. KARTU RINGKASAN STATISTIK -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 space-y-2 shadow-lg">
+                <p class="text-xs text-gray-400 font-semibold uppercase">Total Pendapatan</p>
+                <h3 id="stat-revenue" class="text-3xl font-bold text-amber-400">Rp 0</h3>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 space-y-2 shadow-lg">
+                <p class="text-xs text-gray-400 font-semibold uppercase">Total Pesanan Selesai</p>
+                <h3 id="stat-orders" class="text-3xl font-bold text-blue-400">0</h3>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 space-y-2 shadow-lg">
+                <p class="text-xs text-gray-400 font-semibold uppercase">Menu Terdaftar</p>
+                <h3 id="stat-menus" class="text-3xl font-bold text-green-400">38 Item</h3>
+            </div>
+        </div>
+
+        <!-- 2. GRAFIK ANALITIK PENJUALAN -->
+        <section class="bg-gray-800 p-6 rounded-xl border border-gray-700 space-y-4 shadow-lg">
+            <h2 class="text-xl font-bold border-b border-gray-700 pb-3">
+                <i class="fa-solid fa-chart-column text-amber-500 mr-2"></i> Grafik Pendapatan Penjualan Steakhouse
+            </h2>
+            <div class="h-72">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </section>
+
+        <!-- 3. TABEL RIWAYAT TRANSAKSI, FILTER, & EKSPOR CSV -->
+        <section class="bg-gray-800 p-6 rounded-xl border border-gray-700 space-y-4 shadow-lg">
+            <div class="flex flex-col md:flex-row justify-between items-center border-b border-gray-700 pb-4 gap-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fa-solid fa-receipt text-amber-500 mr-2"></i> Riwayat Pesanan & Data Export
+                </h2>
+                
+                <!-- Filter & Action Buttons -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <input type="text" id="search-keyword" onkeyup="filterReports()" placeholder="Cari pelanggan/meja..." class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white">
+                    <input type="date" id="filter-date" onchange="filterReports()" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white">
+                    <button onclick="exportToCSV()" class="bg-green-600 hover:bg-green-500 px-3 py-1.5 rounded-lg text-xs font-bold transition text-white flex items-center">
+                        <i class="fa-solid fa-file-excel mr-1.5"></i> Unduh CSV
+                    </button>
+                    <button onclick="fetchReports()" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-900 text-gray-400 uppercase text-xs">
+                        <tr>
+                            <th class="p-3">ID Order</th>
+                            <th class="p-3">Meja</th>
+                            <th class="p-3">Pelanggan</th>
+                            <th class="p-3">Total Bayar</th>
+                            <th class="p-3">Status</th>
+                            <th class="p-3">Waktu</th>
+                            <th class="p-3 text-center">Profil & Struk</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reports-table" class="divide-y divide-gray-700"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL DETAIL TRANSAKSI & CETAK STRUK -->
+    <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white text-gray-900 rounded-xl w-full max-w-lg p-6 space-y-6 shadow-2xl relative">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-xl font-bold text-amber-700">
+                    <i class="fa-solid fa-receipt mr-2"></i>Struk Pembayaran / Profil Pesanan
+                </h3>
+                <button onclick="toggleDetailModal()" class="text-gray-500 hover:text-black text-2xl font-bold">&times;</button>
+            </div>
+            
+            <div id="receipt-content" class="space-y-4 font-mono text-sm bg-gray-50 p-4 rounded border border-gray-200"></div>
+
+            <div class="flex space-x-3 pt-2">
+                <button onclick="window.print()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 rounded-lg transition">
+                    <i class="fa-solid fa-print mr-2"></i>Cetak Struk (Thermal)
+                </button>
+                <button onclick="toggleDetailModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold px-4 py-2.5 rounded-lg transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Pengecekan Keamanan Sesi Login
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            alert('Akses ditolak! Silakan login terlebih dahulu.');
+            window.location.href = '/login.html';
+        }
+
+        function handleLogout() {
+            if (confirm('Apakah Anda yakin ingin keluar (logout)?')) {
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('role');
+                window.location.href = '/login.html';
+            }
+        }
+
+        const API_BASE = '/api';
+        let allOrdersData = [];
+        let salesChartInstance = null;
+
+        async function fetchReports() {
+            try {
+                const res = await fetch(`${API_BASE}/orders`);
+                const result = await res.json();
+                if (result.success) {
+                    allOrdersData = result.data;
+                    renderTableAndStats(allOrdersData);
+                }
+            } catch (err) { 
+                console.error("Gagal mengambil data laporan:", err); 
+            }
+        }
+
+        function renderTableAndStats(orders) {
+            const tbody = document.getElementById('reports-table');
+            tbody.innerHTML = '';
+            let totalRevenue = 0;
+            let totalDone = 0;
+
+            if (!orders || orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Tidak ada data transaksi yang ditemukan.</td></tr>`;
+                document.getElementById('stat-revenue').innerText = 'Rp 0';
+                document.getElementById('stat-orders').innerText = '0';
+                return;
+            }
+
+            orders.forEach(o => {
+                const totalHarga = Number(o.total_harga || 0);
+                if (o.status === 'selesai') {
+                    totalRevenue += totalHarga;
+                    totalDone++;
+                }
+
+                let badgeColor = 'bg-yellow-600/20 text-yellow-400 border-yellow-500/30';
+                if (o.status === 'selesai') badgeColor = 'bg-green-600/20 text-green-400 border-green-500/30';
+                if (o.status === 'dibatalkan') badgeColor = 'bg-red-600/20 text-red-400 border-red-500/30';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-800/50">
+                        <td class="p-3 font-mono font-bold text-amber-400">#ORD-${o.id}</td>
+                        <td class="p-3">Meja #${o.nomor_meja}</td>
+                        <td class="p-3 font-semibold">${o.nama_pelanggan}</td>
+                        <td class="p-3 font-bold text-green-400">Rp ${totalHarga.toLocaleString('id-ID')}</td>
+                        <td class="p-3"><span class="text-xs px-2.5 py-1 rounded font-bold uppercase border ${badgeColor}">${o.status}</span></td>
+                        <td class="p-3 text-xs text-gray-400">${new Date(o.created_at).toLocaleString('id-ID')}</td>
+                        <td class="p-3 text-center">
+                            <button onclick='showDetailModal(${JSON.stringify(o)})' class="bg-amber-600 hover:bg-amber-500 text-xs px-3 py-1.5 rounded font-bold transition text-white">
+                                <i class="fa-solid fa-eye mr-1"></i> Detail & Struk
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('stat-revenue').innerText = `Rp ${totalRevenue.toLocaleString('id-ID')}`;
+            document.getElementById('stat-orders').innerText = totalDone;
+            renderChart(orders);
+        }
+
+        // Fitur Live Search & Filter Tanggal
+        function filterReports() {
+            const keyword = document.getElementById('search-keyword').value.toLowerCase();
+            const selectedDate = document.getElementById('filter-date').value;
+
+            const filtered = allOrdersData.filter(o => {
+                const matchKeyword = o.nama_pelanggan.toLowerCase().includes(keyword) || 
+                                     o.id.toString().includes(keyword) || 
+                                     o.nomor_meja.toString().includes(keyword);
+                
+                let matchDate = true;
+                if (selectedDate) {
+                    const orderDate = o.created_at.split('T')[0];
+                    matchDate = (orderDate === selectedDate);
+                }
+
+                return matchKeyword && matchDate;
+            });
+
+            renderTableAndStats(filtered);
+        }
+
+        // Fitur Ekspor ke CSV / Excel
+        function exportToCSV() {
+            if (!allOrdersData || allOrdersData.length === 0) {
+                alert('Tidak ada data untuk diexport!');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,ID Order,Nomor Meja,Nama Pelanggan,Total Harga,Status,Waktu Transaksi\n";
+            
+            allOrdersData.forEach(o => {
+                const row = [
+                    `#ORD-${o.id}`,
+                    `Meja ${o.nomor_meja}`,
+                    `"${o.nama_pelanggan}"`,
+                    o.total_harga,
+                    o.status,
+                    `"${o.created_at}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `laporan_penjualan_steakhouse_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function renderChart(orders) {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            if (salesChartInstance) salesChartInstance.destroy();
+
+            const chartData = [...orders].reverse().slice(-10);
+
+            salesChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.map(o => `#ORD-${o.id} (${o.nama_pelanggan})`),
+                    datasets: [{
+                        label: 'Nilai Transaksi (Rp)',
+                        data: chartData.map(o => o.total_harga),
+                        backgroundColor: '#d97706',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: 'white' } } },
+                    scales: {
+                        x: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+                        y: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } }
+                    }
+                }
+            });
+        }
+
+        function showDetailModal(order) {
+            const container = document.getElementById('receipt-content');
+            container.innerHTML = `
+                <div class="text-center border-b pb-3 space-y-1">
+                    <h4 class="font-bold text-lg text-black">PRIME STEAKHOUSE</h4>
+                    <p class="text-xs text-gray-600">Jl. Margonda Raya No. 14, Depok</p>
+                    <p class="text-xs text-gray-600">Telp: 021-78891234</p>
+                </div>
+                <div class="space-y-1 text-xs py-2 border-b">
+                    <div class="flex justify-between"><span>No. Order:</span> <span class="font-bold">#ORD-${order.id}</span></div>
+                    <div class="flex justify-between"><span>Waktu:</span> <span>${new Date(order.created_at).toLocaleString('id-ID')}</span></div>
+                    <div class="flex justify-between"><span>Pelanggan:</span> <span class="font-bold">${order.nama_pelanggan}</span></div>
+                    <div class="flex justify-between"><span>Nomor Meja:</span> <span class="font-bold">Meja #${order.nomor_meja}</span></div>
+                    <div class="flex justify-between"><span>Status:</span> <span class="uppercase font-bold text-amber-700">${order.status}</span></div>
+                </div>
+                <div class="space-y-2 py-2 border-b">
+                    <p class="font-bold text-xs text-gray-700 uppercase">Rincian Pembayaran:</p>
+                    <div class="flex justify-between text-xs"><span>Total Tagihan Pesanan</span> <span>Rp ${Number(order.total_harga).toLocaleString('id-ID')}</span></div>
+                    <div class="flex justify-between text-xs"><span>Pajak (10%) & Service (5%)</span> <span>Termasuk</span></div>
+                </div>
+                <div class="flex justify-between font-bold text-base pt-2 text-black">
+                    <span>TOTAL BAYAR:</span>
+                    <span class="text-amber-700">Rp ${Number(order.total_harga).toLocaleString('id-ID')}</span>
+                </div>
+                <div class="text-center text-xs text-gray-500 pt-2 border-t">
+                    <p>Terima kasih atas kunjungan Anda!</p>
+                    <p>Silakan datang kembali.</p>
+                </div>
+            `;
+            toggleDetailModal();
+        }
+
+        function toggleDetailModal() {
+            document.getElementById('detail-modal').classList.toggle('hidden');
+        }
+
+        fetchReports();
+    </script>
+</body>
+</html>

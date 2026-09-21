@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Prime Steakhouse POS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white font-sans antialiased flex items-center justify-center h-screen">
+
+    <div class="bg-gray-800 p-8 rounded-2xl border border-gray-700 w-full max-w-md space-y-6 shadow-2xl">
+        <div class="text-center space-y-2">
+            <i class="fa-solid fa-drumstick-bite text-amber-500 text-4xl"></i>
+            <h1 class="text-2xl font-bold tracking-wide">PRIME STEAKHOUSE</h1>
+            <p class="text-xs text-gray-400">Silakan login untuk masuk ke Dashboard Admin & Kasir</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Username</label>
+                <input type="text" id="login-user" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="Ketik: admin atau kasir">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Password</label>
+                <input type="password" id="login-pass" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500" placeholder="••••••••">
+            </div>
+            <button onclick="handleLogin()" class="w-full bg-amber-600 hover:bg-amber-500 font-bold py-3 rounded-lg transition text-white shadow-lg">
+                Masuk Sistem
+            </button>
+        </div>
+
+        <div class="bg-gray-900 p-3 rounded-lg border border-gray-700 text-xs text-gray-400 space-y-1">
+            <p class="font-bold text-amber-400">Akun Simulasi:</p>
+            <p>• Admin: Username <code class="text-white bg-gray-800 px-1 py-0.5 rounded">admin</code> | Pass <code class="text-white bg-gray-800 px-1 py-0.5 rounded">admin123</code></p>
+            <p>• Kasir: Username <code class="text-white bg-gray-800 px-1 py-0.5 rounded">kasir</code> | Pass <code class="text-white bg-gray-800 px-1 py-0.5 rounded">kasir123</code></p>
+        </div>
+
+        <div class="text-center pt-2 border-t border-gray-700">
+            <a href="/" class="text-xs text-amber-400 hover:underline"><i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke Menu Utama Pelanggan</a>
+        </div>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const user = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+
+            if (!user || !pass) {
+                alert('Username dan password wajib diisi!');
+                return;
+            }
+
+            if (user === 'admin' && pass === 'admin123') {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('role', 'admin');
+                alert('Login Berhasil sebagai Admin!');
+                window.location.href = '/admin.html';
+            } else if (user === 'kasir' && pass === 'kasir123') {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('role', 'kasir');
+                alert('Login Berhasil sebagai Kasir!');
+                window.location.href = '/admin.html';
+            } else {
+                alert('Username atau Password salah!\nGunakan: admin / admin123');
+            }
+        }
+    </script>
+</body>
+</html>
